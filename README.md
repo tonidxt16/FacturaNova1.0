@@ -1,4 +1,6 @@
-# Aplicación web sencilla para facturas
+# FacturaNova 1.0
+
+Facturación para novacomp.
 
 Permite iniciar sesión con cuentas y roles, crear facturas privadas por facturador, ver el desglose de subtotal/impuesto/total, duplicar, editar, eliminar con confirmación y descargar el PDF. El administrador ve todas las facturas y puede gestionar usuarios. El diseño del PDF sigue la plantilla proporcionada. No certifica requisitos fiscales ni de facturación electrónica.
 
