@@ -4,6 +4,10 @@ Facturación para novacomp.
 
 Permite iniciar sesión con cuentas y roles, crear facturas privadas por facturador, ver el desglose de subtotal/impuesto/total, duplicar, editar, eliminar con confirmación y descargar el PDF. El administrador ve todas las facturas y puede gestionar usuarios. El diseño del PDF sigue la plantilla proporcionada. No certifica requisitos fiscales ni de facturación electrónica.
 
+## Guía de usuario
+
+Consulta la [guía de usuario](./GUIA_DE_USUARIO.md) para ver instrucciones paso a paso y capturas de pantalla.
+
 ## Ejecutar en Windows
 
 Necesitas Python 3.10 o posterior.
