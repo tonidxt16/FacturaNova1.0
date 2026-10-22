@@ -803,8 +803,6 @@ def invoice_pdf(invoice_id):
                 format_money(item.line_total, invoice.currency),
             ]
         )
-    for _ in range(max(0, 10 - len(invoice.items))):
-        item_rows.append([safe_paragraph(" ", "Small") for _ in range(5)])
     item_table = Table(
         item_rows,
         colWidths=[24 * mm, 23 * mm, 84 * mm, 31 * mm, 25 * mm],

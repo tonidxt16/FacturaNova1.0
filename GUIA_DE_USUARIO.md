@@ -46,6 +46,7 @@ Completa el formulario **Nueva factura**:
 ![Formulario para crear una factura](docs/capturas/02-nueva-factura.png)
 
 El sistema calcula el subtotal, el impuesto y el total usando las cantidades y precios ingresados.
+El PDF final muestra únicamente las líneas con productos o servicios; no agrega filas vacías de relleno.
 
 ## 4. Revisar, editar o descargar el PDF
 
