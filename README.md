@@ -68,3 +68,14 @@ $env:APP_PASSWORD_HASH = & $Python -c "from getpass import getpass; from werkzeu
 ```
 
 Copia el resultado como `APP_PASSWORD_HASH` en Render. No uses una contraseña débil ni pegues el texto de la contraseña en el repositorio.
+
+### Recuperar la contraseña del administrador existente
+
+`APP_PASSWORD_HASH` solo crea la cuenta inicial cuando la base de datos aún no tiene usuarios; no reemplaza la contraseña de una cuenta existente. Para restablecerla sin borrar facturas:
+
+1. Genera un token temporal aleatorio en PowerShell: `& $Python -c "import secrets; print(secrets.token_urlsafe(32))"`.
+2. Añade ese valor como `ADMIN_RECOVERY_TOKEN` en las variables de entorno de Render y guarda/despliega el servicio. No lo compartas ni lo agregues al repositorio.
+3. Cuando el servicio esté **Live**, abre `https://TU-SERVICIO.onrender.com/admin/recovery`, introduce el token y establece una contraseña nueva de al menos 10 caracteres para el usuario configurado en `APP_USERNAME` (por defecto, `admin`).
+4. Al confirmar el mensaje de éxito, elimina `ADMIN_RECOVERY_TOKEN` de Render y vuelve a desplegar. El token se registra como usado en la base, y la ruta deja de estar disponible al retirar la variable.
+
+La recuperación conserva las facturas y solo funciona con un token no utilizado. La cuenta objetivo debe existir, estar activa y tener rol de administrador.

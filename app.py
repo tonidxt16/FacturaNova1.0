@@ -1,3 +1,4 @@
+import hashlib
 import os
 import re
 import secrets
@@ -133,6 +134,13 @@ class InvoiceItem(db.Model):
         )
 
 
+class AdminRecoveryUse(db.Model):
+    __tablename__ = "admin_recovery_use"
+
+    token_fingerprint = db.Column(db.String(64), primary_key=True)
+    used_at = db.Column(db.Date, nullable=False, default=date.today)
+
+
 @login_manager.user_loader
 def load_user(user_id):
     if user_id.isdigit():
@@ -217,6 +225,57 @@ def login():
         flash("Usuario o contraseña incorrectos.", "error")
 
     return render_template("login.html")
+
+
+@app.route("/admin/recovery", methods=["GET", "POST"])
+def recover_admin_password():
+    recovery_token = os.environ.get("ADMIN_RECOVERY_TOKEN", "")
+    if not recovery_token:
+        abort(404)
+
+    token_fingerprint = hashlib.sha256(recovery_token.encode("utf-8")).hexdigest()
+    if db.session.get(AdminRecoveryUse, token_fingerprint):
+        abort(410, description="El token de recuperación ya fue utilizado.")
+
+    if request.method == "POST":
+        submitted_token = request.form.get("token", "")
+        password = request.form.get("password", "")
+        password_confirmation = request.form.get("password_confirmation", "")
+        if not secrets.compare_digest(submitted_token, recovery_token):
+            flash("Token de recuperación no válido.", "error")
+        elif len(password) < 10:
+            flash("La contraseña debe tener al menos 10 caracteres.", "error")
+        elif password != password_confirmation:
+            flash("Las contraseñas no coinciden.", "error")
+        else:
+            username = os.environ.get("APP_USERNAME", "admin").strip()
+            admin = User.query.filter_by(
+                username=username, role="admin", is_active=True
+            ).first()
+            if admin is None:
+                abort(
+                    409,
+                    description=(
+                        "No se encontró una cuenta administradora activa "
+                        "para el valor configurado en APP_USERNAME."
+                    ),
+                )
+
+            admin.password_hash = generate_password_hash(password)
+            db.session.add(AdminRecoveryUse(token_fingerprint=token_fingerprint))
+            try:
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                abort(410, description="El token de recuperación ya fue utilizado.")
+
+            flash(
+                "Contraseña del administrador actualizada. Ya puedes iniciar sesión.",
+                "success",
+            )
+            return redirect(url_for("login"))
+
+    return render_template("admin_recovery.html")
 
 
 @app.post("/logout")
