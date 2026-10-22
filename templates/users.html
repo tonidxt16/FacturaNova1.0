@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Usuarios | Facturas{% endblock %}
+{% block content %}
+<main>
+  <h1>Mantenimiento de usuarios</h1>
+  <section class="card">
+    <h2>Crear usuario</h2>
+    <form method="post" action="{{ url_for('create_user') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="form-grid">
+        <div>
+          <label for="new-username">Usuario</label>
+          <input id="new-username" name="username" minlength="3" maxlength="64" pattern="[A-Za-z0-9_.-]+" autocomplete="off" required>
+        </div>
+        <div>
+          <label for="new-role">Rol</label>
+          <select id="new-role" name="role">
+            <option value="facturador">Facturador</option>
+            <option value="admin">Administrador</option>
+          </select>
+        </div>
+        <div>
+          <label for="new-password">Contraseña temporal (mínimo 10 caracteres)</label>
+          <input id="new-password" name="password" type="password" minlength="10" autocomplete="new-password" required>
+        </div>
+      </div>
+      <p><button type="submit">Crear usuario</button></p>
+    </form>
+  </section>
+
+  <section class="card">
+    <h2>Usuarios existentes</h2>
+    <p class="muted">Puedes restablecer una contraseña, cambiar el rol o desactivar una cuenta. Un usuario con facturas no se puede eliminar; desactívalo para conservar su historial.</p>
+    {% if users %}
+    <div class="user-list">
+      {% for user in users %}
+      <form class="user-row" method="post" action="{{ url_for('update_user', user_id=user.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <div>
+          <label for="username-{{ user.id }}">Usuario</label>
+          <input id="username-{{ user.id }}" name="username" value="{{ user.username }}" minlength="3" maxlength="64" pattern="[A-Za-z0-9_.-]+" required>
+          <span class="muted">{{ invoice_counts.get(user.id, 0) }} factura(s)</span>
+        </div>
+        <div>
+          <label for="role-{{ user.id }}">Rol</label>
+          {% if user.id == current_user.id %}
+          <input type="hidden" name="role" value="admin">
+          <select id="role-{{ user.id }}" disabled><option selected>Administrador</option></select>
+          {% else %}
+          <select id="role-{{ user.id }}" name="role">
+            <option value="facturador" {% if user.role == "facturador" %}selected{% endif %}>Facturador</option>
+            <option value="admin" {% if user.role == "admin" %}selected{% endif %}>Administrador</option>
+          </select>
+          {% endif %}
+        </div>
+        <div>
+          <label for="password-{{ user.id }}">Nueva contraseña (opcional)</label>
+          <input id="password-{{ user.id }}" name="password" type="password" minlength="10" autocomplete="new-password" placeholder="Dejar vacío para conservar">
+        </div>
+        <div class="user-status">
+          <label for="active-{{ user.id }}">Activo</label>
+          {% if user.id == current_user.id %}
+          <input type="hidden" name="is_active" value="on">
+          <input id="active-{{ user.id }}" type="checkbox" checked disabled>
+          {% else %}
+          <input id="active-{{ user.id }}" name="is_active" type="checkbox" {% if user.is_active %}checked{% endif %}>
+          {% endif %}
+        </div>
+        <div class="actions user-actions">
+          <button type="submit">Guardar</button>
+          {% if user.id != current_user.id and invoice_counts.get(user.id, 0) == 0 %}
+          <button class="danger" type="submit" formaction="{{ url_for('delete_user', user_id=user.id) }}" formnovalidate onclick="return confirm('¿Eliminar el usuario {{ user.username }}?');">Eliminar</button>
+          {% endif %}
+        </div>
+      </form>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="muted">No hay usuarios.</p>
+    {% endif %}
+  </section>
+</main>
+{% endblock %}

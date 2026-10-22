@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Factura {{ invoice.number }} | Facturas{% endblock %}
+{% block content %}
+<main>
+  <div class="row">
+    <div>
+      <h1>Factura {{ invoice.number }}</h1>
+      <p class="muted">Fecha: {{ invoice.issue_date.strftime("%d/%m/%Y") }}</p>
+    </div>
+    <div class="actions">
+      <a class="button" href="{{ url_for('invoice_pdf', invoice_id=invoice.id) }}">Descargar PDF</a>
+      <a class="button secondary" href="{{ url_for('edit_invoice', invoice_id=invoice.id) }}">Editar</a>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Datos del emisor</h2>
+    <p><strong>{{ invoice.seller_name or "—" }}</strong></p>
+    {% if invoice.seller_tax_id %}<p>Identificación: {{ invoice.seller_tax_id }}</p>{% endif %}
+    {% if invoice.seller_phone %}<p>Teléfono: {{ invoice.seller_phone }}</p>{% endif %}
+    {% if invoice.seller_address %}<p>Dirección: {{ invoice.seller_address }}</p>{% endif %}
+
+    <h2>Datos del cliente</h2>
+    <p><strong>Empresa:</strong> {{ invoice.customer_name }}</p>
+    {% if invoice.customer_contact %}<p><strong>Contacto:</strong> {{ invoice.customer_contact }}</p>{% endif %}
+    {% if invoice.customer_email %}<p><strong>Correo:</strong> {{ invoice.customer_email }}</p>{% endif %}
+    {% if invoice.customer_tax_id %}<p><strong>RUC / identificación:</strong> {{ invoice.customer_tax_id }}</p>{% endif %}
+    {% if invoice.customer_phone %}<p><strong>Teléfono:</strong> {{ invoice.customer_phone }}</p>{% endif %}
+    {% if invoice.payment_method %}<p><strong>Forma de pago:</strong> {{ invoice.payment_method }}</p>{% endif %}
+  </section>
+
+  <section class="card">
+    <h2>Productos o servicios</h2>
+    <table>
+      <thead>
+        <tr><th>Item #</th><th>Cantidad</th><th>Descripción</th><th>Precio unitario</th><th>Monto</th></tr>
+      </thead>
+      <tbody>
+        {% for item in invoice.items %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td>{{ format_quantity(item.quantity) }}</td>
+          <td>{{ item.description }}</td>
+          <td>{{ format_money(item.unit_price, invoice.currency) }}</td>
+          <td>{{ format_money(item.line_total, invoice.currency) }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div class="totals">
+      <p><span>Subtotal</span><strong>{{ format_money(invoice.subtotal, invoice.currency) }}</strong></p>
+      {% if invoice.tax_rate %}
+      <p><span>Impuesto ({{ invoice.tax_rate }}%)</span><strong>{{ format_money(invoice.tax_amount, invoice.currency) }}</strong></p>
+      {% endif %}
+      <p class="grand-total"><span>TOTAL</span><strong>{{ format_money(invoice.total, invoice.currency) }}</strong></p>
+    </div>
+  </section>
+  <p><a href="{{ url_for('index') }}">Volver a facturas</a></p>
+</main>
+{% endblock %}

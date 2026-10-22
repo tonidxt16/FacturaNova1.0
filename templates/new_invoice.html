@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+{% block title %}{{ "Editar" if invoice else "Crear" }} factura | Facturas{% endblock %}
+{% block content %}
+<main>
+  <h1>{{ "Editar factura " ~ invoice.number if invoice else "Nueva factura" }}</h1>
+  <form class="card" method="post" action="{{ url_for('edit_invoice', invoice_id=invoice.id) if invoice else url_for('new_invoice') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <h2>Datos del emisor</h2>
+    <p class="muted">Estos datos aparecen en la parte superior de la factura. Puedes configurarlos una vez con las variables SELLER_*.</p>
+    <div class="form-grid">
+      <div><label for="seller_name">Nombre</label><input id="seller_name" name="seller_name" maxlength="160" value="{{ form_values.get('seller_name', '') }}"></div>
+      <div><label for="seller_tax_id">Número de identificación</label><input id="seller_tax_id" name="seller_tax_id" maxlength="80" value="{{ form_values.get('seller_tax_id', '') }}"></div>
+      <div><label for="seller_phone">Teléfono</label><input id="seller_phone" name="seller_phone" maxlength="80" value="{{ form_values.get('seller_phone', '') }}"></div>
+      <div><label for="seller_address">Dirección</label><input id="seller_address" name="seller_address" maxlength="400" value="{{ form_values.get('seller_address', '') }}"></div>
+    </div>
+    <h2>Datos del cliente</h2>
+    <div class="form-grid">
+      <div><label for="customer_name">Empresa *</label><input id="customer_name" name="customer_name" maxlength="160" required value="{{ form_values.get('customer_name', '') }}"></div>
+      <div><label for="customer_contact">Contacto</label><input id="customer_contact" name="customer_contact" maxlength="160" value="{{ form_values.get('customer_contact', '') }}"></div>
+      <div><label for="customer_email">Correo</label><input id="customer_email" name="customer_email" type="email" maxlength="254" value="{{ form_values.get('customer_email', '') }}"></div>
+      <div><label for="customer_tax_id">RUC / identificación</label><input id="customer_tax_id" name="customer_tax_id" maxlength="80" value="{{ form_values.get('customer_tax_id', '') }}"></div>
+      <div><label for="customer_phone">Teléfono</label><input id="customer_phone" name="customer_phone" maxlength="80" value="{{ form_values.get('customer_phone', '') }}"></div>
+      <div><label for="payment_method">Forma de pago</label><input id="payment_method" name="payment_method" maxlength="120" placeholder="Ej. transferencia, efectivo" value="{{ form_values.get('payment_method', '') }}"></div>
+    </div>
+    <h2>Fecha y moneda</h2>
+    <div class="form-grid">
+      <div><label for="issue_date">Fecha *</label><input id="issue_date" name="issue_date" type="date" value="{{ form_values.get('issue_date', today) }}" required></div>
+      <div><label for="currency">Moneda *</label><input id="currency" name="currency" value="{{ form_values.get('currency', 'USD') }}" maxlength="3" required></div>
+      <div><label for="tax_rate">Impuesto (%) *</label><input id="tax_rate" name="tax_rate" type="number" min="0" max="100" step="0.01" value="{{ form_values.get('tax_rate', '0') }}" required></div>
+    </div>
+    <h2>Productos o servicios</h2>
+    <div id="items">
+      {% for item in item_rows %}
+      <div class="line item-row">
+        <div><label>Descripción *</label><input name="description[]" maxlength="240" required value="{{ item.description }}"></div>
+        <div><label>Cantidad *</label><input name="quantity[]" type="number" min="0.01" step="0.01" value="{{ item.quantity }}" required></div>
+        <div><label>Precio unitario *</label><input name="unit_price[]" type="number" min="0" step="0.01" value="{{ item.unit_price }}" required></div>
+        <button class="danger remove" type="button" aria-label="Quitar línea" {% if loop.length == 1 %}hidden{% endif %}>Quitar</button>
+      </div>
+      {% endfor %}
+    </div>
+    <p><button class="secondary" id="add-item" type="button">Agregar línea</button></p>
+    <p class="muted">Esta herramienta genera una factura sencilla en PDF; no valida requisitos fiscales de un país específico.</p>
+    <button type="submit">{{ "Guardar cambios" if invoice else "Guardar factura" }}</button>
+    <a href="{{ url_for('index') }}">Cancelar</a>
+  </form>
+</main>
+<script>
+  const items = document.getElementById("items");
+  document.getElementById("add-item").addEventListener("click", () => {
+    const row = items.querySelector(".item-row").cloneNode(true);
+    row.querySelectorAll("input").forEach((input) => {
+      input.value = input.name === "quantity[]" ? "1" : "";
+      input.required = true;
+    });
+    row.querySelector(".remove").hidden = false;
+    items.appendChild(row);
+  });
+  items.addEventListener("click", (event) => {
+    if (event.target.matches(".remove") && items.querySelectorAll(".item-row").length > 1) {
+      event.target.closest(".item-row").remove();
+    }
+  });
+</script>
+{% endblock %}

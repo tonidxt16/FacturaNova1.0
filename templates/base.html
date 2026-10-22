@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Facturas{% endblock %}</title>
+  <style>
+    :root { font-family: system-ui, sans-serif; color: #1c2938; background: #f3f6f9; }
+    body { max-width: 960px; margin: 0 auto; padding: 24px; }
+    header, .row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    header { margin-bottom: 28px; }
+    a { color: #135ca8; }
+    .card { background: white; padding: 24px; border: 1px solid #dce3eb; border-radius: 10px; margin-bottom: 18px; }
+    label { display: block; font-weight: 600; margin: 14px 0 5px; }
+    input, textarea { box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #bac6d3; border-radius: 5px; font: inherit; }
+    button, .button { display: inline-block; padding: 10px 15px; border: 0; border-radius: 5px; background: #135ca8; color: white; font: inherit; text-decoration: none; cursor: pointer; }
+    button.secondary { background: #586779; }
+    button.danger { background: #9c3030; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { text-align: left; padding: 11px 8px; border-bottom: 1px solid #e1e6ec; }
+    .actions { display: flex; align-items: center; gap: 12px; }
+    .actions form { margin: 0; }
+    .actions button { padding: 6px 9px; }
+    select { box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #bac6d3; border-radius: 5px; background: white; font: inherit; }
+    .user-list { display: grid; gap: 16px; }
+    .user-row { display: grid; grid-template-columns: 1.2fr .9fr 1.4fr .4fr auto; align-items: end; gap: 12px; padding: 14px 0; border-top: 1px solid #e1e6ec; }
+    .user-row label { margin-top: 0; }
+    .user-status input { width: auto; }
+    .user-actions { padding-bottom: 5px; }
+    .totals { width: min(100%, 360px); margin: 20px 0 0 auto; }
+    .totals p { display: flex; justify-content: space-between; gap: 24px; padding: 10px 12px; margin: 0; border-bottom: 1px solid #e1e6ec; }
+    .totals .grand-total { margin-top: 4px; border: 0; border-radius: 5px; background: #65b8ef; color: #102b43; font-size: 1.2rem; }
+    .flash { padding: 12px; border-radius: 5px; background: #e8f2fc; margin-bottom: 12px; }
+    .flash.error { background: #fff0ed; color: #8f241b; }
+    .flash.success { background: #eaf7ef; color: #216238; }
+    .line { display: grid; grid-template-columns: 2fr 1fr 1fr auto; align-items: end; gap: 10px; }
+    .form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+    .form-grid input { min-width: 0; }
+    .muted { color: #586779; }
+    @media (max-width: 800px) { .user-row { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 650px) { body { padding: 14px; } .line, .form-grid { grid-template-columns: 1fr 1fr; } table { font-size: .9rem; } .actions { flex-wrap: wrap; gap: 8px; } }
+  </style>
+</head>
+<body>
+  {% if current_user.is_authenticated %}
+  <header>
+    <nav class="actions">
+      <a href="{{ url_for('index') }}"><strong>Facturas</strong></a>
+      {% if current_user.is_admin %}<a href="{{ url_for('manage_users') }}">Usuarios</a>{% endif %}
+    </nav>
+    <div class="actions">
+      <span class="muted">{{ current_user.username }}</span>
+      <form method="post" action="{{ url_for('logout') }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button class="secondary" type="submit">Cerrar sesión</button>
+      </form>
+    </div>
+  </header>
+  {% endif %}
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash {{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</body>
+</html>
