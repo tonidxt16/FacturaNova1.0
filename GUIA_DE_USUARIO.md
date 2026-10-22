@@ -53,6 +53,14 @@ Desde la lista, selecciona **Ver** para revisar los datos del emisor y del clien
 
 ![Detalle de una factura de ejemplo](docs/capturas/03-detalle-factura.png)
 
+### Así queda la factura final
+
+Esta es una vista previa de la factura en PDF, tal como se genera al seleccionar **Descargar PDF**. El ejemplo contiene información e importes ficticios.
+
+![Factura de ejemplo final generada en PDF](docs/capturas/05-factura-final.png)
+
+También puedes [abrir o descargar el PDF de ejemplo](docs/ejemplo-factura.pdf).
+
 Antes de compartir el PDF, revisa que los datos del cliente, la moneda, la fecha, el impuesto y los importes sean correctos. La aplicación genera un PDF sencillo; no certifica el cumplimiento de requisitos fiscales ni sustituye un sistema de facturación electrónica.
 
 ## 5. Administrar usuarios (solo administradores)
