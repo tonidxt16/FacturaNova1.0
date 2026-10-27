@@ -7,6 +7,7 @@ Permite iniciar sesión con cuentas y roles, crear facturas privadas por factura
 ## Guía de usuario
 
 Consulta la [guía de usuario](./GUIA_DE_USUARIO.md) para ver instrucciones paso a paso y capturas de pantalla.
+Para preparar el proyecto desde cero en otro equipo, consulta el [manual técnico de instalación local en Windows (PDF)](./docs/MANUAL_TECNICO_INSTALACION.pdf).
 
 ## Ejecutar en Windows
 
