@@ -224,7 +224,10 @@ def login():
             abort(503, description="Falta configurar APP_PASSWORD_HASH.")
         flash("Usuario o contraseña incorrectos.", "error")
 
-    return render_template("login.html")
+    return render_template(
+        "login.html",
+        admin_recovery_enabled=bool(os.environ.get("ADMIN_RECOVERY_TOKEN")),
+    )
 
 
 @app.route("/admin/recovery", methods=["GET", "POST"])

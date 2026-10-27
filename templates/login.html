@@ -11,5 +11,8 @@
     <input id="password" type="password" name="password" autocomplete="current-password" required>
     <p><button type="submit">Entrar</button></p>
   </form>
+  {% if admin_recovery_enabled %}
+  <p><a href="{{ url_for('recover_admin_password') }}">¿Olvidaste la contraseña del administrador?</a></p>
+  {% endif %}
 </main>
 {% endblock %}
