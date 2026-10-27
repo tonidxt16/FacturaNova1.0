@@ -8,6 +8,7 @@ Permite iniciar sesión con cuentas y roles, crear facturas privadas por factura
 
 Consulta la [guía de usuario](./GUIA_DE_USUARIO.md) para ver instrucciones paso a paso y capturas de pantalla.
 Para preparar el proyecto desde cero en otro equipo, consulta el [manual técnico de instalación local en Windows (PDF)](./docs/MANUAL_TECNICO_INSTALACION.pdf).
+Si quieres configurar y ejecutar el proyecto desde VS Code con GitHub Copilot, consulta el [manual paso a paso de VS Code e IA (PDF)](./docs/MANUAL_VSCODE_COPILOT.pdf).
 
 ## Ejecutar en Windows
 
