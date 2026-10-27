@@ -40,8 +40,9 @@ Completa el formulario **Nueva factura**:
 1. **Datos del emisor**: indica el nombre, identificación, teléfono y dirección. Si ya aparecen llenos, revísalos.
 2. **Datos del cliente**: escribe la empresa del cliente; es obligatorio. Contacto, correo, identificación, teléfono y forma de pago son opcionales.
 3. **Fecha y moneda**: selecciona la fecha, escribe un código de moneda de tres letras (por ejemplo, `USD`) y el porcentaje de impuesto entre 0 y 100.
-4. **Productos o servicios**: por cada línea, agrega una descripción, cantidad mayor que cero y precio unitario igual o mayor que cero. Usa **Agregar línea** para añadir más productos o servicios; **Quitar** elimina una línea adicional.
-5. Selecciona **Guardar factura**. Si falta un dato o un valor no es válido, corrígelo y vuelve a guardar.
+4. **Correlativo**: el sistema propone el siguiente correlativo de tu usuario. Puedes modificarlo manualmente; no puede repetirse en tus propias facturas, aunque otro usuario puede tener el mismo.
+5. **Productos o servicios**: por cada línea, agrega una descripción, cantidad mayor que cero y precio unitario igual o mayor que cero. Usa **Agregar línea** para añadir más productos o servicios; **Quitar** elimina una línea adicional.
+6. Selecciona **Guardar factura**. Si falta un dato o un valor no es válido, corrígelo y vuelve a guardar.
 
 ![Formulario para crear una factura](docs/capturas/02-nueva-factura.png)
 
@@ -51,6 +52,7 @@ El PDF final muestra únicamente las líneas con productos o servicios; no agreg
 ## 4. Revisar, editar o descargar el PDF
 
 Desde la lista, selecciona **Ver** para revisar los datos del emisor y del cliente, las líneas y los totales. En el detalle puedes seleccionar **Descargar PDF** o **Editar**.
+Al editar una factura también puedes corregir su correlativo; debe seguir siendo único para el usuario propietario.
 
 ![Detalle de una factura de ejemplo](docs/capturas/03-detalle-factura.png)
 

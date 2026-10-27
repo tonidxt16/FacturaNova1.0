@@ -9,11 +9,12 @@
   <section class="card">
     {% if invoices %}
     <table>
-      <thead><tr><th>Número</th><th>Cliente</th><th>Fecha</th><th>Total</th><th>Acciones</th></tr></thead>
+      <thead><tr><th>Correlativo</th>{% if current_user.is_admin %}<th>Usuario</th>{% endif %}<th>Cliente</th><th>Fecha</th><th>Total</th><th>Acciones</th></tr></thead>
       <tbody>
         {% for invoice in invoices %}
         <tr>
-          <td>{{ invoice.number }}</td>
+          <td>{{ invoice.correlative }}</td>
+          {% if current_user.is_admin %}<td>{{ invoice.owner.username if invoice.owner else "—" }}</td>{% endif %}
           <td>{{ invoice.customer_name }}</td>
           <td>{{ invoice.issue_date.isoformat() }}</td>
           <td>{{ format_money(invoice.total, invoice.currency) }}</td>
@@ -25,7 +26,7 @@
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="secondary" type="submit">Duplicar</button>
             </form>
-            <form method="post" action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}" onsubmit="return confirm('¿Eliminar la factura {{ invoice.number }}? Esta acción no se puede deshacer.');">
+            <form method="post" action="{{ url_for('delete_invoice', invoice_id=invoice.id) }}" onsubmit="return confirm('¿Eliminar la factura {{ invoice.correlative }}? Esta acción no se puede deshacer.');">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="danger" type="submit">Eliminar</button>
             </form>

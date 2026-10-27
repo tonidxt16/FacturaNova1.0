@@ -1,10 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Factura {{ invoice.number }} | Facturas{% endblock %}
+{% block title %}Factura {{ invoice.correlative }} | Facturas{% endblock %}
 {% block content %}
 <main>
   <div class="row">
     <div>
-      <h1>Factura {{ invoice.number }}</h1>
+      <h1>Factura {{ invoice.correlative }}</h1>
       <p class="muted">Fecha: {{ invoice.issue_date.strftime("%d/%m/%Y") }}</p>
     </div>
     <div class="actions">

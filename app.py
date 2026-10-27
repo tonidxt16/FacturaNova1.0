@@ -83,8 +83,15 @@ class User(UserMixin, db.Model):
 
 
 class Invoice(db.Model):
+    __table_args__ = (
+        db.Index(
+            "uq_invoice_owner_correlative", "owner_id", "correlative", unique=True
+        ),
+    )
+
     id = db.Column(db.Integer, primary_key=True)
-    number = db.Column(db.String(32), unique=True, nullable=False)
+    storage_key = db.Column("number", db.String(32), unique=True, nullable=False)
+    correlative = db.Column(db.String(32), nullable=False)
     customer_name = db.Column(db.String(160), nullable=False)
     customer_email = db.Column(db.String(254), nullable=True)
     customer_address = db.Column(db.String(400), nullable=True)
@@ -165,6 +172,7 @@ def ensure_database():
     columns = {column["name"] for column in inspect(db.engine).get_columns("invoice")}
     new_columns = {
         "owner_id": db.Integer(),
+        "correlative": db.String(32),
         "customer_contact": db.String(160),
         "customer_tax_id": db.String(80),
         "customer_phone": db.String(80),
@@ -188,6 +196,14 @@ def ensure_database():
                     text(f'ALTER TABLE invoice ADD COLUMN "{name}" {sql_type}')
                 )
 
+    with db.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE invoice SET correlative = number "
+                "WHERE correlative IS NULL OR correlative = ''"
+            )
+        )
+
     if User.query.count() == 0:
         password_hash = os.environ.get("APP_PASSWORD_HASH", "")
         username = os.environ.get("APP_USERNAME", "admin").strip()
@@ -201,6 +217,19 @@ def ensure_database():
                 )
             )
             db.session.commit()
+
+    legacy_admin = User.query.filter_by(role="admin", is_active=True).order_by(User.id).first()
+    if legacy_admin is not None and Invoice.query.filter_by(owner_id=None).first():
+        Invoice.query.filter_by(owner_id=None).update(
+            {Invoice.owner_id: legacy_admin.id}, synchronize_session=False
+        )
+        db.session.commit()
+
+    next(
+        index
+        for index in Invoice.__table__.indexes
+        if index.name == "uq_invoice_owner_correlative"
+    ).create(bind=db.engine, checkfirst=True)
 
     if current_user.is_authenticated:
         active_user = db.session.get(User, current_user.id)
@@ -447,7 +476,8 @@ def duplicate_invoice(invoice_id):
     if not current_user.is_admin and source.owner_id != current_user.id:
         abort(404)
     duplicate = Invoice(
-        number="PENDIENTE",
+        storage_key=secrets.token_hex(16),
+        correlative=next_invoice_correlative(current_user.id),
         customer_name=source.customer_name,
         customer_email=source.customer_email,
         customer_address=source.customer_address,
@@ -473,10 +503,8 @@ def duplicate_invoice(invoice_id):
         ],
     )
     db.session.add(duplicate)
-    db.session.flush()
-    duplicate.number = f"FAC-{duplicate.id:05d}"
     db.session.commit()
-    flash(f"Factura {duplicate.number} duplicada. Revisa sus datos antes de usarla.", "success")
+    flash(f"Factura {duplicate.correlative} duplicada. Revisa sus datos antes de usarla.", "success")
     return redirect(url_for("edit_invoice", invoice_id=duplicate.id))
 
 
@@ -521,6 +549,11 @@ def invoice_form_values(invoice=None):
         "issue_date": date.today().isoformat(),
         "currency": "USD",
         "tax_rate": "0",
+        "correlative": (
+            invoice.correlative
+            if invoice is not None
+            else next_invoice_correlative(current_user.id)
+        ),
     }
     if invoice is not None:
         for name in defaults:
@@ -554,7 +587,21 @@ def invoice_form_items(invoice=None):
     ]
 
 
-def invoice_data_from_form():
+def invoice_data_from_form(owner_id=None, invoice_id=None):
+    owner_id = owner_id or current_user.id
+    correlative = request.form.get("correlative", "").strip()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,31}", correlative):
+        raise ValueError(
+            "El correlativo debe tener entre 1 y 32 caracteres: letras, números, punto, guion o guion bajo."
+        )
+    existing_correlative = Invoice.query.filter_by(
+        owner_id=owner_id, correlative=correlative
+    )
+    if invoice_id is not None:
+        existing_correlative = existing_correlative.filter(Invoice.id != invoice_id)
+    if existing_correlative.first():
+        raise ValueError("Ese correlativo ya está en uso por este usuario.")
+
     customer_name = request.form.get("customer_name", "").strip()
     if not customer_name:
         raise ValueError("Escribe el nombre de la empresa del cliente.")
@@ -598,6 +645,7 @@ def invoice_data_from_form():
         for name, default in seller_defaults().items()
     }
     return {
+        "correlative": correlative,
         "customer_name": customer_name,
         "customer_email": request.form.get("customer_email", "").strip() or None,
         "customer_contact": request.form.get("customer_contact", "").strip() or None,
@@ -640,12 +688,17 @@ def new_invoice():
             flash(str(error), "error")
             return render_invoice_form()
 
-        invoice = Invoice(number="PENDIENTE", owner_id=current_user.id, **data)
+        invoice = Invoice(
+            storage_key=secrets.token_hex(16), owner_id=current_user.id, **data
+        )
         db.session.add(invoice)
-        db.session.flush()
-        invoice.number = f"FAC-{invoice.id:05d}"
-        db.session.commit()
-        flash(f"Factura {invoice.number} creada.", "success")
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash("Ese correlativo ya está en uso por este usuario.", "error")
+            return render_invoice_form()
+        flash(f"Factura {invoice.correlative} creada.", "success")
         return redirect(url_for("index"))
 
     return render_invoice_form()
@@ -659,16 +712,23 @@ def edit_invoice(invoice_id):
         abort(404)
     if request.method == "POST":
         try:
-            data = invoice_data_from_form()
+            data = invoice_data_from_form(
+                owner_id=invoice.owner_id, invoice_id=invoice.id
+            )
         except (ValueError, TypeError) as error:
             flash(str(error), "error")
             return render_invoice_form(invoice)
 
         for name, value in data.items():
             setattr(invoice, name, value)
-        db.session.commit()
-        (INSTANCE_DIR / f"factura-{invoice.number}.pdf").unlink(missing_ok=True)
-        flash(f"Factura {invoice.number} actualizada.", "success")
+        try:
+            db.session.commit()
+        except IntegrityError:
+            db.session.rollback()
+            flash("Ese correlativo ya está en uso por este usuario.", "error")
+            return render_invoice_form(invoice)
+        (INSTANCE_DIR / f"factura-{invoice.id}.pdf").unlink(missing_ok=True)
+        flash(f"Factura {invoice.correlative} actualizada.", "success")
         return redirect(url_for("index"))
 
     return render_invoice_form(invoice)
@@ -680,11 +740,12 @@ def delete_invoice(invoice_id):
     invoice = db.get_or_404(Invoice, invoice_id)
     if not current_user.is_admin and invoice.owner_id != current_user.id:
         abort(404)
-    number = invoice.number
+    correlative = invoice.correlative
+    invoice_id = invoice.id
     db.session.delete(invoice)
     db.session.commit()
-    (INSTANCE_DIR / f"factura-{number}.pdf").unlink(missing_ok=True)
-    flash(f"Factura {number} eliminada.", "success")
+    (INSTANCE_DIR / f"factura-{invoice_id}.pdf").unlink(missing_ok=True)
+    flash(f"Factura {correlative} eliminada.", "success")
     return redirect(url_for("index"))
 
 
@@ -698,6 +759,18 @@ def format_quantity(quantity):
     return f"{quantity.normalize():f}"
 
 
+def next_invoice_correlative(owner_id):
+    correlatives = db.session.scalars(
+        db.select(Invoice.correlative).where(Invoice.owner_id == owner_id)
+    )
+    largest_number = 0
+    for correlative in correlatives:
+        match = re.fullmatch(r"FAC-(\d+)", correlative or "")
+        if match:
+            largest_number = max(largest_number, int(match.group(1)))
+    return f"FAC-{largest_number + 1:05d}"
+
+
 app.jinja_env.globals["format_money"] = format_money
 app.jinja_env.globals["format_quantity"] = format_quantity
 
@@ -708,7 +781,7 @@ def invoice_pdf(invoice_id):
     invoice = db.get_or_404(Invoice, invoice_id)
     if not current_user.is_admin and invoice.owner_id != current_user.id:
         abort(404)
-    output_path = INSTANCE_DIR / f"factura-{invoice.number}.pdf"
+    output_path = INSTANCE_DIR / f"factura-{invoice.id}.pdf"
     styles = getSampleStyleSheet()
     styles.add(ParagraphStyle(name="Small", parent=styles["Normal"], fontSize=8, leading=10))
     styles.add(
@@ -739,7 +812,7 @@ def invoice_pdf(invoice_id):
         leftMargin=14.5 * mm,
         topMargin=16 * mm,
         bottomMargin=14 * mm,
-        title=f"Factura {invoice.number}",
+        title=f"Factura {invoice.correlative}",
     )
     seller_details = [
         label_value("Nombre:", invoice.seller_name),
@@ -752,7 +825,7 @@ def invoice_pdf(invoice_id):
         styles["Small"],
     )
     invoice_number = Paragraph(
-        f'<font color="#d52222"><b>{escape(invoice.number.removeprefix("FAC-"))}</b></font>',
+        f'<font color="#d52222"><b>{escape(invoice.correlative.removeprefix("FAC-"))}</b></font>',
         ParagraphStyle(
             name="InvoiceNumber",
             parent=styles["Small"],
@@ -938,7 +1011,7 @@ def invoice_pdf(invoice_id):
         output_path,
         mimetype="application/pdf",
         as_attachment=True,
-        download_name=f"factura-{invoice.number}.pdf",
+        download_name=f"factura-{invoice.correlative}.pdf",
     )
 
 

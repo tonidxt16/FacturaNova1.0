@@ -2,7 +2,7 @@
 {% block title %}{{ "Editar" if invoice else "Crear" }} factura | Facturas{% endblock %}
 {% block content %}
 <main>
-  <h1>{{ "Editar factura " ~ invoice.number if invoice else "Nueva factura" }}</h1>
+  <h1>{{ "Editar factura " ~ invoice.correlative if invoice else "Nueva factura" }}</h1>
   <form class="card" method="post" action="{{ url_for('edit_invoice', invoice_id=invoice.id) if invoice else url_for('new_invoice') }}">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <h2>Datos del emisor</h2>
@@ -24,6 +24,7 @@
     </div>
     <h2>Fecha y moneda</h2>
     <div class="form-grid">
+      <div><label for="correlative">Correlativo *</label><input id="correlative" name="correlative" maxlength="32" pattern="[A-Za-z0-9][A-Za-z0-9._-]{0,31}" title="Usa letras, números, punto, guion o guion bajo." value="{{ form_values.get('correlative', '') }}" required></div>
       <div><label for="issue_date">Fecha *</label><input id="issue_date" name="issue_date" type="date" value="{{ form_values.get('issue_date', today) }}" required></div>
       <div><label for="currency">Moneda *</label><input id="currency" name="currency" value="{{ form_values.get('currency', 'USD') }}" maxlength="3" required></div>
       <div><label for="tax_rate">Impuesto (%) *</label><input id="tax_rate" name="tax_rate" type="number" min="0" max="100" step="0.01" value="{{ form_values.get('tax_rate', '0') }}" required></div>
